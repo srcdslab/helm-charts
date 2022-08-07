@@ -1,0 +1,430 @@
+apiVersion: {{ include "common.capabilities.statefulset.apiVersion" . }}
+kind: StatefulSet
+metadata:
+  name: {{ include "srcds.srcds.fullname" . }}
+  namespace: {{ .Release.Namespace | quote }}
+  labels: {{- include "common.labels.standard" . | nindent 4 }}
+    app.kubernetes.io/component: srcds
+    {{- if .Values.commonLabels }}
+    {{- include "common.tplvalues.render" ( dict "value" .Values.commonLabels "context" $ ) | nindent 4 }}
+    {{- end }}
+    {{- if .Values.srcds.labels }}
+    {{- include "common.tplvalues.render" ( dict "value" .Values.srcds.labels "context" $ ) | nindent 4 }}
+    {{- end }}
+  annotations:
+    {{- if .Values.commonAnnotations }}
+    {{- include "common.tplvalues.render" ( dict "value" .Values.commonAnnotations "context" $ ) | nindent 4 }}
+    {{- end }}
+    {{- if .Values.srcds.annotations }}
+    {{- include "common.tplvalues.render" ( dict "value" .Values.srcds.annotations "context" $ ) | nindent 4 }}
+    {{- end }}
+spec:
+  replicas: 1
+  serviceName: {{ include "srcds.srcds.svc.headless" . }}
+  {{- if .Values.srcds.updateStrategy }}
+  updateStrategy: {{- toYaml .Values.srcds.updateStrategy | nindent 4 }}
+  {{- end }}
+  selector:
+    matchLabels: {{- include "common.labels.matchLabels" . | nindent 6 }}
+      app.kubernetes.io/component: srcds
+  template:
+    metadata:
+      name: {{ include "srcds.srcds.fullname" . }}
+      labels: {{- include "common.labels.standard" . | nindent 8 }}
+        app.kubernetes.io/component: srcds
+        {{- if .Values.commonLabels }}
+        {{- include "common.tplvalues.render" ( dict "value" .Values.commonLabels "context" $ ) | nindent 8 }}
+        {{- end }}
+        {{- if .Values.srcds.podLabels }}
+        {{- include "common.tplvalues.render" ( dict "value" .Values.srcds.podLabels "context" $ ) | nindent 8 }}
+        {{- end }}
+      {{- if .Values.srcds.podAnnotations }}
+      annotations:
+        {{- include "common.tplvalues.render" ( dict "value" .Values.srcds.podAnnotations "context" $ ) | nindent 8 }}
+      {{- end }}
+    spec:
+      {{- if .Values.srcds.extraPodSpec }}
+      {{- include "common.tplvalues.render" (dict "value" .Values.srcds.extraPodSpec "context" $) | nindent 6 }}
+      {{- end }}
+      serviceAccountName: {{ include "srcds.serviceAccountName" . }}
+      {{- include "srcds.imagePullSecrets" . | nindent 6 }}
+      {{- if .Values.srcds.hostAliases }}
+      hostAliases: {{- include "common.tplvalues.render" (dict "value" .Values.srcds.hostAliases "context" $) | nindent 8 }}
+      {{- end }}
+      {{- if .Values.srcds.affinity }}
+      affinity: {{- include "common.tplvalues.render" (dict "value" .Values.srcds.affinity "context" $) | nindent 8 }}
+      {{- else }}
+      affinity:
+        podAffinity: {{- include "common.affinities.pods" (dict "type" .Values.srcds.podAffinityPreset "component" "srcds" "context" $) | nindent 10 }}
+        podAntiAffinity: {{- include "common.affinities.pods" (dict "type" .Values.srcds.podAntiAffinityPreset "component" "srcds" "context" $) | nindent 10 }}
+        nodeAffinity: {{- include "common.affinities.nodes" (dict "type" .Values.srcds.nodeAffinityPreset.type "key" .Values.srcds.nodeAffinityPreset.key "values" .Values.srcds.nodeAffinityPreset.values) | nindent 10 }}
+      {{- end }}
+      {{- if .Values.srcds.nodeSelector }}
+      nodeSelector: {{- include "common.tplvalues.render" (dict "value" .Values.srcds.nodeSelector "context" $) | nindent 8 }}
+      {{- end }}
+      {{- if .Values.srcds.tolerations }}
+      tolerations: {{- include "common.tplvalues.render" (dict "value" .Values.srcds.tolerations "context" $) | nindent 8 }}
+      {{- end }}
+      {{- if .Values.srcds.topologySpreadConstraints }}
+      topologySpreadConstraints: {{- include "common.tplvalues.render" (dict "value" .Values.srcds.topologySpreadConstraints "context" .) | nindent 8 }}
+      {{- end }}
+      {{- if .Values.srcds.priorityClassName }}
+      priorityClassName: {{ .Values.srcds.priorityClassName }}
+      {{- end }}
+      {{- if .Values.srcds.schedulerName }}
+      schedulerName: {{ .Values.srcds.schedulerName | quote }}
+      {{- end }}
+      {{- if .Values.srcds.terminationGracePeriodSeconds }}
+      terminationGracePeriodSeconds: {{ .Values.srcds.terminationGracePeriodSeconds }}
+      {{- end }}
+      {{- if .Values.srcds.podSecurityContext.enabled }}
+      securityContext: {{- omit .Values.srcds.podSecurityContext "enabled" | toYaml | nindent 8 }}
+      {{- end }}
+      hostNetwork: {{ .Values.srcds.hostNetwork }}
+      hostIPC: {{ .Values.srcds.hostIPC }}
+      initContainers:
+        {{- if and .Values.volumePermissions.enabled (or .Values.srcds.persistence.enabled .Values.shmVolume.enabled) }}
+        - name: init-chmod-data
+          image: {{ include "srcds.volumePermissions.image" . }}
+          imagePullPolicy: {{ .Values.volumePermissions.image.pullPolicy | quote }}
+          {{- if .Values.volumePermissions.resources }}
+          resources: {{- toYaml .Values.volumePermissions.resources | nindent 12 }}
+          {{- end }}
+          command:
+            - /bin/sh
+            - -ec
+            - |
+              {{- if .Values.srcds.persistence.enabled }}
+              {{- if eq ( toString ( .Values.volumePermissions.containerSecurityContext.runAsUser )) "auto" }}
+              chown `id -u`:`id -G | cut -d " " -f2` {{ .Values.srcds.persistence.mountPath }}
+              {{- else }}
+              chown {{ .Values.srcds.containerSecurityContext.runAsUser }}:{{ .Values.srcds.podSecurityContext.fsGroup }} {{ .Values.srcds.persistence.mountPath }}
+              {{- end }}
+              mkdir -p {{ .Values.srcds.persistence.mountPath }}/data
+              chmod 700 {{ .Values.srcds.persistence.mountPath }}/data
+              find {{ .Values.srcds.persistence.mountPath }} -mindepth 1 -maxdepth 1 -not -name ".snapshot" -not -name "lost+found" | \
+              {{- if eq ( toString ( .Values.volumePermissions.containerSecurityContext.runAsUser )) "auto" }}
+                xargs -r chown -R `id -u`:`id -G | cut -d " " -f2`
+              {{- else }}
+                xargs -r chown -R {{ .Values.srcds.containerSecurityContext.runAsUser }}:{{ .Values.srcds.podSecurityContext.fsGroup }}
+              {{- end }}
+              {{- end }}
+              {{- if .Values.shmVolume.enabled }}
+              chmod -R 777 /dev/shm
+              {{- end }}
+          {{- if eq ( toString ( .Values.volumePermissions.containerSecurityContext.runAsUser )) "auto" }}
+          securityContext: {{- omit .Values.volumePermissions.containerSecurityContext "runAsUser" | toYaml | nindent 12 }}
+          {{- else }}
+          securityContext: {{- .Values.volumePermissions.containerSecurityContext | toYaml | nindent 12 }}
+          {{- end }}
+          volumeMounts:
+            {{- if .Values.srcds.persistence.enabled }}
+            - name: data
+              mountPath: {{ .Values.srcds.persistence.mountPath }}
+              {{- if .Values.srcds.persistence.subPath }}
+              subPath: {{ .Values.srcds.persistence.subPath }}
+              {{- end }}
+            {{- end }}
+            {{- if .Values.shmVolume.enabled }}
+            - name: dshm
+              mountPath: /dev/shm
+            {{- end }}
+        {{- end }}
+        {{- if .Values.srcds.initContainers }}
+        {{- include "common.tplvalues.render" ( dict "value" .Values.srcds.initContainers "context" $ ) | nindent 8 }}
+        {{- end }}
+      containers:
+        - name: srcds
+          image: {{ include "srcds.image" . }}
+          imagePullPolicy: {{ .Values.image.pullPolicy | quote }}
+          {{- if .Values.srcds.containerSecurityContext.enabled }}
+          securityContext: {{- omit .Values.srcds.containerSecurityContext "enabled" | toYaml | nindent 12 }}
+          {{- end }}
+          {{- if .Values.diagnosticMode.enabled }}
+          command: {{- include "common.tplvalues.render" (dict "value" .Values.diagnosticMode.command "context" $) | nindent 12 }}
+          {{- else if .Values.srcds.command }}
+          command: {{- include "common.tplvalues.render" (dict "value" .Values.srcds.command "context" $) | nindent 12 }}
+          {{- end }}
+          {{- if .Values.diagnosticMode.enabled }}
+          args: {{- include "common.tplvalues.render" (dict "value" .Values.diagnosticMode.args "context" $) | nindent 12 }}
+          {{- else if .Values.srcds.args }}
+          args: {{- include "common.tplvalues.render" (dict "value" .Values.srcds.args "context" $) | nindent 12 }}
+          {{- end }}
+          env:
+            - name: SRCDS_RCON_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "srcds.secretName" . }}
+                  key: srcds.rcon.password
+            - name: SRCDS_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "srcds.secretName" . }}
+                  key: srcds.password
+            - name: SRCDS_GSLT
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "srcds.secretName" . }}
+                  key: srcds.gslt
+            - name: SRCDS_APPID
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "srcds.srcds.configmapName" . }}
+                  key: srcds.appid
+            - name: "SRCDS_GAME_PORT"
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "srcds.srcds.configmapName" . }}
+                  key: srcds.game.port
+            - name: "SRCDS_SOURCE_TV_PORT"
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "srcds.srcds.configmapName" . }}
+                  key: srcds.sourcetv.port
+            - name: "SRCDS_CLIENT_PORT"
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "srcds.srcds.configmapName" . }}
+                  key: srcds.client.port
+            - name: "SRCDS_STEAM_PORT"
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "srcds.srcds.configmapName" . }}
+                  key: srcds.steam.port
+            - name: "SRCDS_HOSTNAME"
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "srcds.srcds.configmapName" . }}
+                  key: srcds.hostname
+            - name: "SRCDS_IP"
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "srcds.srcds.configmapName" . }}
+                  key: srcds.ip
+            - name: "SRCDS_FPSMAX"
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "srcds.srcds.configmapName" . }}
+                  key: srcds.fpsmax
+            - name: "SRCDS_TICKRATE"
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "srcds.srcds.configmapName" . }}
+                  key: srcds.tickrate
+            - name: "SRCDS_MAXPLAYERS"
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "srcds.srcds.configmapName" . }}
+                  key: srcds.maxplayers
+            - name: "SRCDS_REGION"
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "srcds.srcds.configmapName" . }}
+                  key: srcds.region
+            - name: "SRCDS_MAP"
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "srcds.srcds.configmapName" . }}
+                  key: srcds.map
+            - name: "SRCDS_GAMETYPE"
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "srcds.srcds.configmapName" . }}
+                  key: srcds.gametype
+            - name: "SRCDS_ADDITIONAL_ARGS"
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "srcds.srcds.configmapName" . }}
+                  key: srcds.additionalargs
+            {{- if .Values.srcds.extraEnvVars }}
+            {{- include "common.tplvalues.render" (dict "value" .Values.srcds.extraEnvVars "context" $) | nindent 12 }}
+            {{- end }}
+          {{- if or .Values.srcds.extraEnvVarsCM .Values.srcds.extraEnvVarsSecret }}
+          envFrom:
+            {{- if .Values.srcds.extraEnvVarsCM }}
+            - configMapRef:
+                name: {{ .Values.srcds.extraEnvVarsCM }}
+            {{- end }}
+            {{- if .Values.srcds.extraEnvVarsSecret }}
+            - secretRef:
+                name: {{ .Values.srcds.extraEnvVarsSecret }}
+            {{- end }}
+          {{- end }}
+          ports:
+            - name: tcp-game
+              containerPort: {{ .Values.containerPorts.game }}
+              protocol: TCP
+            - name: udp-game
+              containerPort: {{ .Values.containerPorts.game }}
+              protocol: UDP
+            - name: udp-sourcetv
+              containerPort: {{ .Values.containerPorts.sourcetv }}
+              protocol: UDP
+            - name: udp-client
+              containerPort: {{ .Values.containerPorts.client }}
+              protocol: UDP
+            - name: udp-steam
+              containerPort: {{ .Values.containerPorts.steam }}
+              protocol: UDP
+          {{- if not .Values.diagnosticMode.enabled }}
+          {{- if .Values.srcds.startupProbe.enabled }}
+          startupProbe: {{- include "common.tplvalues.render" (dict "value" (omit .Values.srcds.startupProbe "enabled") "context" $) | nindent 12 }}
+            exec:
+              command:
+                - /bin/sh
+                - -c
+                - exec echo "Hello"
+          {{- else if .Values.srcds.customStartupProbe }}
+          startupProbe: {{- include "common.tplvalues.render" (dict "value" .Values.srcds.customStartupProbe "context" $) | nindent 12 }}
+          {{- end }}
+          {{- if .Values.srcds.livenessProbe.enabled }}
+          livenessProbe: {{- include "common.tplvalues.render" (dict "value" (omit .Values.srcds.livenessProbe "enabled") "context" $) | nindent 12 }}
+            exec:
+              command:
+                - /bin/sh
+                - -c
+                - exec echo "Hello"
+          {{- else if .Values.srcds.customLivenessProbe }}
+          livenessProbe: {{- include "common.tplvalues.render" (dict "value" .Values.srcds.customLivenessProbe "context" $) | nindent 12 }}
+          {{- end }}
+          {{- if .Values.srcds.readinessProbe.enabled }}
+          readinessProbe: {{- include "common.tplvalues.render" (dict "value" (omit .Values.srcds.readinessProbe "enabled") "context" $) | nindent 12 }}
+            exec:
+              command:
+                - /bin/sh
+                - -c
+                - -e
+                {{- include "srcds.readinessProbeCommand" . | nindent 16 }}
+          {{- else if .Values.srcds.customReadinessProbe }}
+          readinessProbe: {{- include "common.tplvalues.render" (dict "value" .Values.srcds.customReadinessProbe "context" $) | nindent 12 }}
+          {{- end }}
+          {{- end }}
+          {{- if .Values.srcds.resources }}
+          resources: {{- toYaml .Values.srcds.resources | nindent 12 }}
+          {{- end }}
+          {{- if .Values.srcds.lifecycleHooks }}
+          lifecycle: {{- include "common.tplvalues.render" (dict "value" .Values.srcds.lifecycleHooks "context" $) | nindent 12 }}
+          {{- end }}
+          volumeMounts:
+            {{- if .Values.shmVolume.enabled }}
+            - name: dshm
+              mountPath: /dev/shm
+            {{- end }}
+            {{- if .Values.srcds.persistence.enabled }}
+            - name: data
+              mountPath: {{ .Values.srcds.persistence.mountPath }}
+              {{- if .Values.srcds.persistence.subPath }}
+              subPath: {{ .Values.srcds.persistence.subPath }}
+              {{- end }}
+            {{- end }}
+            {{- if .Values.srcds.extraVolumeMounts }}
+            {{- include "common.tplvalues.render" (dict "value" .Values.srcds.extraVolumeMounts "context" $) | nindent 12 }}
+            {{- end }}
+        {{- if .Values.metrics.enabled }}
+        - name: metrics
+          image: {{ include "srcds.metrics.image" . }}
+          imagePullPolicy: {{ .Values.metrics.image.pullPolicy | quote }}
+          {{- if .Values.metrics.containerSecurityContext.enabled }}
+          securityContext: {{- omit .Values.metrics.containerSecurityContext "enabled" | toYaml | nindent 12 }}
+          {{- end }}
+          {{- if .Values.diagnosticMode.enabled }}
+          command: {{- include "common.tplvalues.render" (dict "value" .Values.diagnosticMode.command "context" $) | nindent 12 }}
+          args: {{- include "common.tplvalues.render" (dict "value" .Values.diagnosticMode.args "context" $) | nindent 12 }}
+          {{- else if .Values.metrics.customMetrics }}
+          args: ["--extend.query-path", "/conf/custom-metrics.yaml"]
+          {{- end }}
+          {{- if .Values.metrics.extraEnvVars }}
+          env:
+            {{- include "common.tplvalues.render" (dict "value" .Values.metrics.extraEnvVars "context" $) | nindent 12 }}
+          {{- end }}
+          ports:
+            - name: http-metrics
+              containerPort: {{ .Values.metrics.containerPorts.metrics }}
+          {{- if not .Values.diagnosticMode.enabled }}
+          {{- if .Values.metrics.startupProbe.enabled }}
+          startupProbe: {{- include "common.tplvalues.render" (dict "value" (omit .Values.metrics.startupProbe "enabled") "context" $) | nindent 12 }}
+            tcpSocket:
+              port: http-metrics
+          {{- else if .Values.metrics.customStartupProbe }}
+          startupProbe: {{- include "common.tplvalues.render" (dict "value" .Values.metrics.customStartupProbe "context" $) | nindent 12 }}
+          {{- end }}
+          {{- if .Values.metrics.livenessProbe.enabled }}
+          livenessProbe: {{- include "common.tplvalues.render" (dict "value" (omit .Values.metrics.livenessProbe "enabled") "context" $) | nindent 12 }}
+            httpGet:
+              path: /
+              port: http-metrics
+          {{- else if .Values.metrics.customLivenessProbe }}
+          livenessProbe: {{- include "common.tplvalues.render" (dict "value" .Values.metrics.customLivenessProbe "context" $) | nindent 12 }}
+          {{- end }}
+          {{- if .Values.metrics.readinessProbe.enabled }}
+          readinessProbe: {{- include "common.tplvalues.render" (dict "value" (omit .Values.metrics.readinessProbe "enabled") "context" $) | nindent 12 }}
+            httpGet:
+              path: /
+              port: http-metrics
+          {{- else if .Values.metrics.customReadinessProbe }}
+          readinessProbe: {{- include "common.tplvalues.render" (dict "value" .Values.metrics.customReadinessProbe "context" $) | nindent 12 }}
+          {{- end }}
+          {{- end }}
+          volumeMounts:
+            {{- if .Values.metrics.customMetrics }}
+            - name: custom-metrics
+              mountPath: /conf
+              readOnly: true
+            {{- end }}
+          {{- if .Values.metrics.resources }}
+          resources: {{- toYaml .Values.metrics.resources | nindent 12 }}
+          {{- end }}
+        {{- end }}
+        {{- if .Values.srcds.sidecars }}
+        {{- include "common.tplvalues.render" ( dict "value" .Values.srcds.sidecars "context" $ ) | nindent 8 }}
+        {{- end }}
+      volumes:
+        - name: srcds-config
+          configMap:
+            name: {{ include "srcds.srcds.configmapName" . }}
+        {{- if .Values.srcds.extraVolumes }}
+        {{- include "common.tplvalues.render" ( dict "value" .Values.srcds.extraVolumes "context" $ ) | nindent 8 }}
+        {{- end }}
+        {{- if and .Values.metrics.enabled .Values.metrics.customMetrics }}
+        - name: custom-metrics
+          configMap:
+            name: {{ printf "%s-metrics" (include "common.names.fullname" .) }}
+        {{- end }}
+        {{- if .Values.shmVolume.enabled }}
+        - name: dshm
+          emptyDir:
+            medium: Memory
+            {{- if .Values.shmVolume.sizeLimit }}
+            sizeLimit: {{ .Values.shmVolume.sizeLimit }}
+            {{- end }}
+        {{- end }}
+  {{- if and .Values.srcds.persistence.enabled .Values.srcds.persistence.existingClaim }}
+        - name: data
+          persistentVolumeClaim:
+            claimName: {{ tpl .Values.srcds.persistence.existingClaim $ }}
+  {{- else if not .Values.srcds.persistence.enabled }}
+        - name: data
+          emptyDir: {}
+  {{- else }}
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+        {{- if .Values.srcds.persistence.annotations }}
+        annotations: {{- toYaml .Values.srcds.persistence.annotations | nindent 10 }}
+        {{- end }}
+      spec:
+        accessModes:
+        {{- range .Values.srcds.persistence.accessModes }}
+          - {{ . | quote }}
+        {{- end }}
+        {{- if .Values.srcds.persistence.dataSource }}
+        dataSource: {{- include "common.tplvalues.render" (dict "value" .Values.srcds.persistence.dataSource "context" $) | nindent 10 }}
+        {{- end }}
+        resources:
+          requests:
+            storage: {{ .Values.srcds.persistence.size | quote }}
+        {{- if .Values.srcds.persistence.selector }}
+        selector: {{- include "common.tplvalues.render" (dict "value" .Values.srcds.persistence.selector "context" $) | nindent 10 }}
+        {{- end }}
+        {{- include "common.storage.class" (dict "persistence" .Values.srcds.persistence "global" .Values.global) | nindent 8 }}
+  {{- end }}
