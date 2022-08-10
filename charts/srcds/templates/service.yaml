@@ -1,0 +1,88 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "srcds.srcds.fullname" . }}
+  namespace: {{ .Release.Namespace | quote }}
+  labels: {{- include "common.labels.standard" . | nindent 4 }}
+    {{- if .Values.commonLabels }}
+    {{- include "common.tplvalues.render" ( dict "value" .Values.commonLabels "context" $ ) | nindent 4 }}
+    {{- end }}
+    app.kubernetes.io/component: srcds
+  annotations:
+    {{- if .Values.commonAnnotations }}
+    {{- include "common.tplvalues.render" ( dict "value" .Values.commonAnnotations "context" $ ) | nindent 4 }}
+    {{- end }}
+    {{- if .Values.srcds.service.annotations }}
+    {{- include "common.tplvalues.render" (dict "value" .Values.srcds.service.annotations "context" $) | nindent 4 }}
+    {{- end }}
+spec:
+  type: {{ .Values.srcds.service.type }}
+  {{- if or (eq .Values.srcds.service.type "LoadBalancer") (eq .Values.srcds.service.type "NodePort") }}
+  externalTrafficPolicy: {{ .Values.srcds.service.externalTrafficPolicy | quote }}
+  {{- end }}
+  {{- if and (eq .Values.srcds.service.type "LoadBalancer") (not (empty .Values.srcds.service.loadBalancerSourceRanges)) }}
+  loadBalancerSourceRanges: {{ .Values.srcds.service.loadBalancerSourceRanges }}
+  {{- end }}
+  {{- if and (eq .Values.srcds.service.type "LoadBalancer") (not (empty .Values.srcds.service.loadBalancerIP)) }}
+  loadBalancerIP: {{ .Values.srcds.service.loadBalancerIP }}
+  {{- end }}
+  {{- if and .Values.srcds.service.clusterIP (eq .Values.srcds.service.type "ClusterIP") }}
+  clusterIP: {{ .Values.srcds.service.clusterIP }}
+  {{- end }}
+  {{- if .Values.srcds.service.sessionAffinity }}
+  sessionAffinity: {{ .Values.srcds.service.sessionAffinity }}
+  {{- end }}
+  {{- if .Values.srcds.service.sessionAffinityConfig }}
+  sessionAffinityConfig: {{- include "common.tplvalues.render" (dict "value" .Values.srcds.service.sessionAffinityConfig "context" $) | nindent 4 }}
+  {{- end }}
+  ports:
+    - name: tcp-game
+      port: {{ .Values.srcds.service.ports.game }}
+      protocol: TCP
+      targetPort: tcp-game
+      {{- if and (or (eq .Values.srcds.service.type "NodePort") (eq .Values.srcds.service.type "LoadBalancer")) (not (empty .Values.srcds.service.nodePorts.game)) }}
+      nodePort: {{ .Values.srcds.service.nodePorts.game }}
+      {{- else if eq .Values.srcds.service.type "ClusterIP" }}
+      nodePort: null
+      {{- end }}
+    - name: udp-game
+      port: {{ .Values.srcds.service.ports.game }}
+      protocol: UDP
+      targetPort: udp-game
+      {{- if and (or (eq .Values.srcds.service.type "NodePort") (eq .Values.srcds.service.type "LoadBalancer")) (not (empty .Values.srcds.service.nodePorts.game)) }}
+      nodePort: {{ .Values.srcds.service.nodePorts.game }}
+      {{- else if eq .Values.srcds.service.type "ClusterIP" }}
+      nodePort: null
+      {{- end }}
+    - name: udp-sourcetv
+      port: {{ .Values.srcds.service.ports.sourcetv }}
+      protocol: UDP
+      targetPort: udp-sourcetv
+      {{- if and (or (eq .Values.srcds.service.type "NodePort") (eq .Values.srcds.service.type "LoadBalancer")) (not (empty .Values.srcds.service.nodePorts.sourcetv)) }}
+      nodePort: {{ .Values.srcds.service.nodePorts.sourcetv }}
+      {{- else if eq .Values.srcds.service.type "ClusterIP" }}
+      nodePort: null
+      {{- end }}
+    - name: udp-client
+      port: {{ .Values.srcds.service.ports.client }}
+      protocol: UDP
+      targetPort: udp-client
+      {{- if and (or (eq .Values.srcds.service.type "NodePort") (eq .Values.srcds.service.type "LoadBalancer")) (not (empty .Values.srcds.service.nodePorts.client)) }}
+      nodePort: {{ .Values.srcds.service.nodePorts.client }}
+      {{- else if eq .Values.srcds.service.type "ClusterIP" }}
+      nodePort: null
+      {{- end }}
+    - name: udp-steam
+      port: {{ .Values.srcds.service.ports.steam }}
+      protocol: UDP
+      targetPort: udp-steam
+      {{- if and (or (eq .Values.srcds.service.type "NodePort") (eq .Values.srcds.service.type "LoadBalancer")) (not (empty .Values.srcds.service.nodePorts.steam)) }}
+      nodePort: {{ .Values.srcds.service.nodePorts.steam }}
+      {{- else if eq .Values.srcds.service.type "ClusterIP" }}
+      nodePort: null
+      {{- end }}
+    {{- if .Values.srcds.service.extraPorts }}
+    {{- include "common.tplvalues.render" (dict "value" .Values.srcds.service.extraPorts "context" $) | nindent 4 }}
+    {{- end }}
+  selector: {{- include "common.labels.matchLabels" . | nindent 4 }}
+    app.kubernetes.io/component: srcds

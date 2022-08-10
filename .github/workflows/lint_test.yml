@@ -15,15 +15,6 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Validate schema
-        uses: wiremind/helm-kubeval-action@v1.2.1
-        with:
-          path: charts
-          config: config_repos
-
-      - name: Cleanup subcharts after kubeval
-        run: rm -rf charts/*/charts
-
       - uses: actions/setup-python@v2
         with:
           python-version: 3.7

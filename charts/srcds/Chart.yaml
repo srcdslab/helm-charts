@@ -1,0 +1,23 @@
+apiVersion: v2
+name: srcds
+version: 0.0.1
+appVersion: "v0.0.3"
+dependencies:
+  - name: common
+    repository: https://charts.bitnami.com/bitnami
+    version: 1.16.0
+description: The Source Dedicated Server or SRCDS is a tool that runs the server component of a Source game without the client component.
+keywords:
+  - srcds
+  - source
+  - dedicated
+  - valve
+  - game
+  - engine
+sources:
+  - https://github.com/srcdslab/helm-charts/tree/main/charts/srcds
+engine: gotpl
+icon: https://i.imgur.com/NkgdoIn.jpg
+maintainers:
+- name: maxime1907
+  email: 19607336+maxime1907@users.noreply.github.com
