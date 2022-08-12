@@ -83,6 +83,32 @@ spec:
       hostNetwork: {{ .Values.srcds.hostNetwork }}
       hostIPC: {{ .Values.srcds.hostIPC }}
       initContainers:
+        - name: install-dependencies
+          image: "{{ .Values.srcdsknight.image.repository }}:{{ .Values.srcdsknight.image.tag }}"
+          imagePullPolicy: {{ .Values.srcdsknight.image.pullPolicy | quote }}
+          {{- if .Values.srcdsknight.containerSecurityContext.enabled }}
+          securityContext: {{- omit .Values.srcdsknight.containerSecurityContext "enabled" | toYaml | nindent 12 }}
+          {{- end }}
+          {{- with .Values.srcdsknight.args }}
+          args:
+{{ toYaml . | trim | indent 12 }}
+          {{- end }}
+          volumeMounts:
+            {{- if .Values.srcds.persistence.enabled }}
+            - name: data
+              mountPath: {{ .Values.srcds.persistence.mountPath }}
+              {{- if .Values.srcds.persistence.subPath }}
+              subPath: {{ .Values.srcds.persistence.subPath }}
+              {{- end }}
+            {{- end }}
+            {{- if .Values.shmVolume.enabled }}
+            - name: dshm
+              mountPath: /dev/shm
+            {{- end }}
+            - name: config-srcdsknight
+              mountPath: /app/config.yml
+              subPath: config.yml
+
         {{- if and .Values.volumePermissions.enabled (or .Values.srcds.persistence.enabled .Values.shmVolume.enabled) }}
         - name: init-chmod-data
           image: {{ include "srcds.volumePermissions.image" . }}
@@ -96,17 +122,9 @@ spec:
             - |
               {{- if .Values.srcds.persistence.enabled }}
               {{- if eq ( toString ( .Values.volumePermissions.containerSecurityContext.runAsUser )) "auto" }}
-              chown `id -u`:`id -G | cut -d " " -f2` {{ .Values.srcds.persistence.mountPath }}
+              chown -R `id -u`:`id -G | cut -d " " -f2` {{ .Values.srcds.persistence.mountPath }}
               {{- else }}
-              chown {{ .Values.srcds.containerSecurityContext.runAsUser }}:{{ .Values.srcds.podSecurityContext.fsGroup }} {{ .Values.srcds.persistence.mountPath }}
-              {{- end }}
-              mkdir -p {{ .Values.srcds.persistence.mountPath }}/data
-              chmod 700 {{ .Values.srcds.persistence.mountPath }}/data
-              find {{ .Values.srcds.persistence.mountPath }} -mindepth 1 -maxdepth 1 -not -name ".snapshot" -not -name "lost+found" | \
-              {{- if eq ( toString ( .Values.volumePermissions.containerSecurityContext.runAsUser )) "auto" }}
-                xargs -r chown -R `id -u`:`id -G | cut -d " " -f2`
-              {{- else }}
-                xargs -r chown -R {{ .Values.srcds.containerSecurityContext.runAsUser }}:{{ .Values.srcds.podSecurityContext.fsGroup }}
+              chown -R {{ .Values.srcds.containerSecurityContext.runAsUser }}:{{ .Values.srcds.podSecurityContext.fsGroup }} {{ .Values.srcds.persistence.mountPath }}
               {{- end }}
               {{- end }}
               {{- if .Values.shmVolume.enabled }}
@@ -133,6 +151,7 @@ spec:
         {{- if .Values.srcds.initContainers }}
         {{- include "common.tplvalues.render" ( dict "value" .Values.srcds.initContainers "context" $ ) | nindent 8 }}
         {{- end }}
+
       containers:
         - name: srcds
           image: {{ include "srcds.image" . }}
@@ -150,7 +169,31 @@ spec:
           {{- else if .Values.srcds.args }}
           args: {{- include "common.tplvalues.render" (dict "value" .Values.srcds.args "context" $) | nindent 12 }}
           {{- end }}
+          {{- if .Values.srcds.console.enabled }}
+          tty: true
+          stdin: true
+          {{- end }}
           env:
+            - name: STEAM_USER
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "srcds.secretName" . }}
+                  key: steam.user
+            - name: STEAM_PASS
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "srcds.secretName" . }}
+                  key: steam.pass
+            - name: STEAM_AUTH
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "srcds.secretName" . }}
+                  key: steam.auth
+            - name: STEAM_ADDITIONAL_ARGS
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "srcds.srcds.configmapName" . }}
+                  key: steam.additionalargs
             - name: SRCDS_RCON_PASSWORD
               valueFrom:
                 secretKeyRef:
@@ -266,6 +309,9 @@ spec:
             - name: udp-steam
               containerPort: {{ .Values.containerPorts.steam }}
               protocol: UDP
+          {{- with .Values.containerPorts.additionalPorts }}
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
           {{- if not .Values.diagnosticMode.enabled }}
           {{- if .Values.srcds.startupProbe.enabled }}
           startupProbe: {{- include "common.tplvalues.render" (dict "value" (omit .Values.srcds.startupProbe "enabled") "context" $) | nindent 12 }}
@@ -406,6 +452,10 @@ spec:
         - name: data
           emptyDir: {}
   {{- else }}
+        - name: config-srcdsknight
+          configMap:
+            name: {{ include "srcds.srcdsknight.configmapName" . }}
+
   volumeClaimTemplates:
     - metadata:
         name: data
