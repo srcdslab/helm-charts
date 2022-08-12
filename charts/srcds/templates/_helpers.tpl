@@ -78,9 +78,21 @@ Get the srcds srcds configuration ConfigMap name.
 {{- if .Values.srcds.existingConfigmap -}}
     {{- printf "%s" (tpl .Values.srcds.existingConfigmap $) -}}
 {{- else -}}
-    {{- printf "%s-configuration" (include "srcds.srcds.fullname" .) -}}
+    {{- printf "%s-cfg" (include "srcds.srcds.fullname" .) -}}
 {{- end -}}
 {{- end -}}
+
+{{/*
+Get the srcds srcdsknight configuration ConfigMap name.
+*/}}
+{{- define "srcds.srcdsknight.configmapName" -}}
+{{- if .Values.srcdsknight.existingConfigmap -}}
+    {{- printf "%s" (tpl .Values.srcdsknight.existingConfigmap $) -}}
+{{- else -}}
+    {{- printf "%s-cfg-srcdsknight" (include "srcds.srcds.fullname" .) -}}
+{{- end -}}
+{{- end -}}
+
 
 {{/*
  Create the name of the service account to use

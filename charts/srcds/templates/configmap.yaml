@@ -1,7 +1,8 @@
+{{- if not .Values.srcds.existingConfigmap }}
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: {{ printf "%s-configuration" (include "srcds.srcds.fullname" .) }}
+  name: {{ include "srcds.srcds.configmapName" . }}
   namespace: {{ .Release.Namespace | quote }}
   labels: {{- include "common.labels.standard" . | nindent 4 }}
     app.kubernetes.io/component: srcds
@@ -12,6 +13,11 @@ metadata:
   annotations: {{- include "common.tplvalues.render" ( dict "value" .Values.commonAnnotations "context" $ ) | nindent 4 }}
   {{- end }}
 data:
+  {{- if .Values.steam.additionalArgs }}
+  steam.additionalargs: {{ printf "%s" (.Values.steam.additionalArgs | join " ") }}
+  {{- else }}
+  steam.additionalargs: ""
+  {{- end }}
   srcds.game.port: {{ .Values.containerPorts.game | quote }}
   srcds.sourcetv.port: {{ .Values.containerPorts.sourcetv | quote }}
   srcds.client.port: {{ .Values.containerPorts.client | quote }}
@@ -26,7 +32,30 @@ data:
   srcds.map: {{ .Values.srcds.map | quote }}
   srcds.gametype: {{ .Values.srcds.gametype | quote }}
   {{- if .Values.srcds.additionalArgs }}
-  srcds.additionalargs: {{- printf "%s" (.Values.srcds.additionalArgs | join " ") }}
+  srcds.additionalargs: {{ printf "%s" (.Values.srcds.additionalArgs | join " ") }}
   {{- else }}
   srcds.additionalargs: ""
   {{- end }}
+
+{{- end }}
+
+{{- if not .Values.srcds.existingConfigmap }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "srcds.srcdsknight.configmapName" . }}
+  namespace: {{ .Release.Namespace | quote }}
+  labels: {{- include "common.labels.standard" . | nindent 4 }}
+    app.kubernetes.io/component: srcds
+    {{- if .Values.commonLabels }}
+    {{- include "common.tplvalues.render" ( dict "value" .Values.commonLabels "context" $ ) | nindent 4 }}
+    {{- end }}
+  {{- if .Values.commonAnnotations }}
+  annotations: {{- include "common.tplvalues.render" ( dict "value" .Values.commonAnnotations "context" $ ) | nindent 4 }}
+  {{- end }}
+data:
+  config.yml: |
+    installPath: "/app/{{ .Values.srcds.gametype }}"
+    {{- .Values.srcdsknight.config | toYaml | nindent 4 }}
+{{- end }}

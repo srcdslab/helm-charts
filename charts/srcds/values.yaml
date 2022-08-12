@@ -69,7 +69,7 @@ diagnosticMode:
 image:
   registry: docker.io
   repository: maxime1907/srcds
-  tag: ""
+  tag: v0.0.5
   ## Specify a imagePullPolicy
   ## Defaults to 'Always' if image tag is 'latest', else set to 'IfNotPresent'
   ## ref: https://kubernetes.io/docs/user-guide/images/#pre-pulling-images
@@ -117,12 +117,97 @@ shmVolume:
   ##
   sizeLimit: ""
 
+## @section STEAM parameters
+##
+steam:
+  ## @param steam.user Steam user to connect to the api
+  ##
+  user: "anonymous"
+  ## @param steam.pass Steam password to connect to the api
+  ##
+  pass: ""
+  ## @param steam.pass Steam auth to connect to the api
+  ##
+  auth: ""
+  ## @param steam.additionalArgs Additional arguments to pass to steamcmd
+  ##
+  additionalArgs: []
+
+srcdsknight:
+  image:
+    repository: "ghcr.io/srcdslab/srcdsknight"
+    tag: "v0.1.1"
+  args:
+    - "-vv"
+  existingConfigmap: ""
+  config:
+    ## @param srcds.dependencies.folders Folders that will be extracted from the dependency archive
+    ##
+    folders:
+      ## @param srcds.dependencies.folders.gametype Gametype folder that will be extracted from the dependency archive
+      ##
+      gametype:
+        path: ""
+      ## @param srcds.dependencies.folders.common Common list of folders that will be extracted from the dependency archive
+      ##
+      common:
+        paths:
+          - "common"
+          - ""
+      directories:
+        addons:
+          path: "addons"
+        cfg:
+          path: "cfg"
+        models:
+          path: "models"
+        materials:
+          path: "materials"
+        sound:
+          path: "sound"
+    ## @param srcds.cache Cache of links
+    ##
+    cache:
+      ## @param srcds.cache.enabled Enable cache
+      ##
+      enabled: true
+    ## @param srcds.skipFailedDownload Skip failed download link
+    ##
+    skipFailedDownload: true
+    ## @param srcds.dependencies.links List of links for srcds dependencies
+    ##
+    links:
+      # Core
+      metamod:
+        url: https://mms.alliedmods.net/mmsdrop/1.11/mmsource-1.11.0-git1148-linux.tar.gz
+      sourcemod:
+        url: https://sm.alliedmods.net/smdrop/1.11/sourcemod-1.11.0-git6934-linux.tar.gz
+
+  ## Container Security Context
+  ## ref: https://kubernetes.io/docs/tasks/configure-pod-container/security-context/
+  ## @param srcds.containerSecurityContext.enabled Enable container security context
+  ## @param srcds.containerSecurityContext.runAsUser User ID for the container
+  ##
+  containerSecurityContext:
+    enabled: true
+    runAsUser: 1001
+
 ## @section SRCDS parameters
 ##
 srcds:
+  ## @param srcds.console Console parameters
+  ##
+  console:
+    ## @param srcds.console.enabled Enable attaching to the container to access console
+    ##
+    enabled: true
   ## @param srcds.appid Application ID https://developer.valvesoftware.com/wiki/Dedicated_Servers_List
   ##
   appid: ""
+  ## @param srcds.gslt GSLT token that will be used for this server
+  ## https://steamcommunity.com/dev/managegameservers
+  ##
+  gslt: ""
   ## @param srcds.hostname Name of the server
   ##
   hostname: "Source Engine Dedicated Server"
@@ -340,7 +425,7 @@ srcds:
   ## @param srcds.terminationGracePeriodSeconds Seconds srcds pod needs to terminate gracefully
   ## ref: https://kubernetes.io/docs/concepts/workloads/pods/pod/#termination-of-pods
   ##
-  terminationGracePeriodSeconds: ""
+  terminationGracePeriodSeconds: "10"
   ## @param srcds.updateStrategy.type srcds statefulset strategy type
   ## @param srcds.updateStrategy.rollingUpdate srcds statefulset rolling update configuration parameters
   ## ref: https://kubernetes.io/docs/concepts/workloads/controllers/statefulset/#update-strategies
@@ -599,7 +684,7 @@ networkPolicy:
 volumePermissions:
   ## @param volumePermissions.enabled Enable init container that changes the owner and group of the persistent volume
   ##
-  enabled: false
+  enabled: true
   ## @param volumePermissions.image.registry Init container volume-permissions image registry
   ## @param volumePermissions.image.repository Init container volume-permissions image repository
   ## @param volumePermissions.image.tag Init container volume-permissions image tag (immutable tags are recommended)
@@ -693,8 +778,8 @@ metrics:
   ##
   image:
     registry: docker.io
-    repository: corentincl/srcds_exporter
-    tag: 2.1.0
+    repository: galexrt/srcds_exporter
+    tag: v1.5.1
     pullPolicy: IfNotPresent
     ## Optionally specify an array of imagePullSecrets.
     ## Secrets must be manually created in the namespace.
