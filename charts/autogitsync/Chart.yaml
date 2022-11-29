@@ -1,0 +1,21 @@
+apiVersion: v2
+name: autogitsync
+version: 0.0.1
+appVersion: "v0.0.1"
+dependencies:
+  - name: common
+    repository: https://charts.bitnami.com/bitnami
+    version: 1.16.0
+description: Automatically synchronize local folder on git changes.
+keywords:
+  - auto
+  - git
+  - sync
+  - autogitsync
+sources:
+  - https://github.com/srcdslab/helm-charts/tree/main/charts/autogitsync
+engine: gotpl
+icon: https://cncf-branding.netlify.app/img/projects/helm/icon/color/helm-icon-color.png
+maintainers:
+- name: maxime1907
+  email: 19607336+maxime1907@users.noreply.github.com
