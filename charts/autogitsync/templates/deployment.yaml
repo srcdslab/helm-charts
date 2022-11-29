@@ -1,0 +1,339 @@
+apiVersion: {{ include "common.capabilities.deployment.apiVersion" . }}
+kind: Deployment
+metadata:
+  name: {{ include "autogitsync.autogitsync.fullname" . }}
+  namespace: {{ .Release.Namespace | quote }}
+  labels: {{- include "common.labels.standard" . | nindent 4 }}
+    app.kubernetes.io/component: autogitsync
+    {{- if .Values.commonLabels }}
+    {{- include "common.tplvalues.render" ( dict "value" .Values.commonLabels "context" $ ) | nindent 4 }}
+    {{- end }}
+    {{- if .Values.autogitsync.labels }}
+    {{- include "common.tplvalues.render" ( dict "value" .Values.autogitsync.labels "context" $ ) | nindent 4 }}
+    {{- end }}
+  annotations:
+    {{- if .Values.commonAnnotations }}
+    {{- include "common.tplvalues.render" ( dict "value" .Values.commonAnnotations "context" $ ) | nindent 4 }}
+    {{- end }}
+    {{- if .Values.autogitsync.annotations }}
+    {{- include "common.tplvalues.render" ( dict "value" .Values.autogitsync.annotations "context" $ ) | nindent 4 }}
+    {{- end }}
+spec:
+  replicas: 1
+  serviceName: {{ include "autogitsync.autogitsync.svc.headless" . }}
+  {{- if .Values.autogitsync.updateStrategy }}
+  updateStrategy: {{- toYaml .Values.autogitsync.updateStrategy | nindent 4 }}
+  {{- end }}
+  selector:
+    matchLabels: {{- include "common.labels.matchLabels" . | nindent 6 }}
+      app.kubernetes.io/component: autogitsync
+  template:
+    metadata:
+      name: {{ include "autogitsync.autogitsync.fullname" . }}
+      labels: {{- include "common.labels.standard" . | nindent 8 }}
+        app.kubernetes.io/component: autogitsync
+        {{- if .Values.commonLabels }}
+        {{- include "common.tplvalues.render" ( dict "value" .Values.commonLabels "context" $ ) | nindent 8 }}
+        {{- end }}
+        {{- if .Values.autogitsync.podLabels }}
+        {{- include "common.tplvalues.render" ( dict "value" .Values.autogitsync.podLabels "context" $ ) | nindent 8 }}
+        {{- end }}
+      {{- if .Values.autogitsync.podAnnotations }}
+      annotations:
+        {{- include "common.tplvalues.render" ( dict "value" .Values.autogitsync.podAnnotations "context" $ ) | nindent 8 }}
+      {{- end }}
+    spec:
+      {{- if .Values.autogitsync.extraPodSpec }}
+      {{- include "common.tplvalues.render" (dict "value" .Values.autogitsync.extraPodSpec "context" $) | nindent 6 }}
+      {{- end }}
+      serviceAccountName: {{ include "autogitsync.serviceAccountName" . }}
+      {{- include "autogitsync.imagePullSecrets" . | nindent 6 }}
+      {{- if .Values.autogitsync.hostAliases }}
+      hostAliases: {{- include "common.tplvalues.render" (dict "value" .Values.autogitsync.hostAliases "context" $) | nindent 8 }}
+      {{- end }}
+      {{- if .Values.autogitsync.affinity }}
+      affinity: {{- include "common.tplvalues.render" (dict "value" .Values.autogitsync.affinity "context" $) | nindent 8 }}
+      {{- else }}
+      affinity:
+        podAffinity: {{- include "common.affinities.pods" (dict "type" .Values.autogitsync.podAffinityPreset "component" "autogitsync" "context" $) | nindent 10 }}
+        podAntiAffinity: {{- include "common.affinities.pods" (dict "type" .Values.autogitsync.podAntiAffinityPreset "component" "autogitsync" "context" $) | nindent 10 }}
+        nodeAffinity: {{- include "common.affinities.nodes" (dict "type" .Values.autogitsync.nodeAffinityPreset.type "key" .Values.autogitsync.nodeAffinityPreset.key "values" .Values.autogitsync.nodeAffinityPreset.values) | nindent 10 }}
+      {{- end }}
+      {{- if .Values.autogitsync.nodeSelector }}
+      nodeSelector: {{- include "common.tplvalues.render" (dict "value" .Values.autogitsync.nodeSelector "context" $) | nindent 8 }}
+      {{- end }}
+      {{- if .Values.autogitsync.tolerations }}
+      tolerations: {{- include "common.tplvalues.render" (dict "value" .Values.autogitsync.tolerations "context" $) | nindent 8 }}
+      {{- end }}
+      {{- if .Values.autogitsync.topologySpreadConstraints }}
+      topologySpreadConstraints: {{- include "common.tplvalues.render" (dict "value" .Values.autogitsync.topologySpreadConstraints "context" .) | nindent 8 }}
+      {{- end }}
+      {{- if .Values.autogitsync.priorityClassName }}
+      priorityClassName: {{ .Values.autogitsync.priorityClassName }}
+      {{- end }}
+      {{- if .Values.autogitsync.schedulerName }}
+      schedulerName: {{ .Values.autogitsync.schedulerName | quote }}
+      {{- end }}
+      {{- if .Values.autogitsync.terminationGracePeriodSeconds }}
+      terminationGracePeriodSeconds: {{ .Values.autogitsync.terminationGracePeriodSeconds }}
+      {{- end }}
+      {{- if .Values.autogitsync.podSecurityContext.enabled }}
+      securityContext: {{- omit .Values.autogitsync.podSecurityContext "enabled" | toYaml | nindent 8 }}
+      {{- end }}
+      hostNetwork: {{ .Values.autogitsync.hostNetwork }}
+      hostIPC: {{ .Values.autogitsync.hostIPC }}
+      {{- if .Values.autogitsync.initContainers }}
+      initContainers:
+        {{- include "common.tplvalues.render" ( dict "value" .Values.autogitsync.initContainers "context" $ ) | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: autogitsync
+          image: {{ include "autogitsync.image" . }}
+          imagePullPolicy: {{ .Values.image.pullPolicy | quote }}
+          {{- if .Values.autogitsync.containerSecurityContext.enabled }}
+          securityContext: {{- omit .Values.autogitsync.containerSecurityContext "enabled" | toYaml | nindent 12 }}
+          {{- end }}
+          {{- if .Values.diagnosticMode.enabled }}
+          command: {{- include "common.tplvalues.render" (dict "value" .Values.diagnosticMode.command "context" $) | nindent 12 }}
+          {{- else if .Values.autogitsync.command }}
+          command: {{- include "common.tplvalues.render" (dict "value" .Values.autogitsync.command "context" $) | nindent 12 }}
+          {{- end }}
+          {{- if .Values.diagnosticMode.enabled }}
+          args: {{- include "common.tplvalues.render" (dict "value" .Values.diagnosticMode.args "context" $) | nindent 12 }}
+          {{- else if .Values.autogitsync.args }}
+          args: {{- include "common.tplvalues.render" (dict "value" .Values.autogitsync.args "context" $) | nindent 12 }}
+          {{- end }}
+          env:
+            - name: STEAM_USER
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "autogitsync.secretName" . }}
+                  key: steam.user
+            - name: STEAM_PASS
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "autogitsync.secretName" . }}
+                  key: steam.pass
+            - name: STEAM_AUTH
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "autogitsync.secretName" . }}
+                  key: steam.auth
+            - name: STEAM_ADDITIONAL_ARGS
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "autogitsync.autogitsync.configmapName" . }}
+                  key: steam.additionalargs
+            - name: autogitsync_RCON_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "autogitsync.secretName" . }}
+                  key: autogitsync.rcon.password
+            - name: autogitsync_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "autogitsync.secretName" . }}
+                  key: autogitsync.password
+            - name: autogitsync_GSLT
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "autogitsync.secretName" . }}
+                  key: autogitsync.gslt
+            - name: autogitsync_APPID
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "autogitsync.autogitsync.configmapName" . }}
+                  key: autogitsync.appid
+            - name: "autogitsync_GAME_PORT"
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "autogitsync.autogitsync.configmapName" . }}
+                  key: autogitsync.game.port
+            - name: "autogitsync_SOURCE_TV_PORT"
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "autogitsync.autogitsync.configmapName" . }}
+                  key: autogitsync.sourcetv.port
+            - name: "autogitsync_CLIENT_PORT"
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "autogitsync.autogitsync.configmapName" . }}
+                  key: autogitsync.client.port
+            - name: "autogitsync_STEAM_PORT"
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "autogitsync.autogitsync.configmapName" . }}
+                  key: autogitsync.steam.port
+            - name: "autogitsync_HOSTNAME"
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "autogitsync.autogitsync.configmapName" . }}
+                  key: autogitsync.hostname
+            - name: "autogitsync_IP"
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "autogitsync.autogitsync.configmapName" . }}
+                  key: autogitsync.ip
+            - name: "autogitsync_FPSMAX"
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "autogitsync.autogitsync.configmapName" . }}
+                  key: autogitsync.fpsmax
+            - name: "autogitsync_TICKRATE"
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "autogitsync.autogitsync.configmapName" . }}
+                  key: autogitsync.tickrate
+            - name: "autogitsync_MAXPLAYERS"
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "autogitsync.autogitsync.configmapName" . }}
+                  key: autogitsync.maxplayers
+            - name: "autogitsync_REGION"
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "autogitsync.autogitsync.configmapName" . }}
+                  key: autogitsync.region
+            - name: "autogitsync_MAP"
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "autogitsync.autogitsync.configmapName" . }}
+                  key: autogitsync.map
+            - name: "autogitsync_GAMETYPE"
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "autogitsync.autogitsync.configmapName" . }}
+                  key: autogitsync.gametype
+            - name: "autogitsync_ADDITIONAL_ARGS"
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "autogitsync.autogitsync.configmapName" . }}
+                  key: autogitsync.additionalargs
+            {{- if .Values.autogitsync.extraEnvVars }}
+            {{- include "common.tplvalues.render" (dict "value" .Values.autogitsync.extraEnvVars "context" $) | nindent 12 }}
+            {{- end }}
+          {{- if or .Values.autogitsync.extraEnvVarsCM .Values.autogitsync.extraEnvVarsSecret }}
+          envFrom:
+            {{- if .Values.autogitsync.extraEnvVarsCM }}
+            - configMapRef:
+                name: {{ .Values.autogitsync.extraEnvVarsCM }}
+            {{- end }}
+            {{- if .Values.autogitsync.extraEnvVarsSecret }}
+            - secretRef:
+                name: {{ .Values.autogitsync.extraEnvVarsSecret }}
+            {{- end }}
+          {{- end }}
+          {{- if not .Values.diagnosticMode.enabled }}
+          {{- if .Values.autogitsync.startupProbe.enabled }}
+          startupProbe: {{- include "common.tplvalues.render" (dict "value" (omit .Values.autogitsync.startupProbe "enabled") "context" $) | nindent 12 }}
+            exec:
+              command:
+                - /bin/sh
+                - -c
+                - exec echo "Hello"
+          {{- else if .Values.autogitsync.customStartupProbe }}
+          startupProbe: {{- include "common.tplvalues.render" (dict "value" .Values.autogitsync.customStartupProbe "context" $) | nindent 12 }}
+          {{- end }}
+          {{- if .Values.autogitsync.livenessProbe.enabled }}
+          livenessProbe: {{- include "common.tplvalues.render" (dict "value" (omit .Values.autogitsync.livenessProbe "enabled") "context" $) | nindent 12 }}
+            exec:
+              command:
+                - /bin/sh
+                - -c
+                - exec echo "Hello"
+          {{- else if .Values.autogitsync.customLivenessProbe }}
+          livenessProbe: {{- include "common.tplvalues.render" (dict "value" .Values.autogitsync.customLivenessProbe "context" $) | nindent 12 }}
+          {{- end }}
+          {{- if .Values.autogitsync.readinessProbe.enabled }}
+          readinessProbe: {{- include "common.tplvalues.render" (dict "value" (omit .Values.autogitsync.readinessProbe "enabled") "context" $) | nindent 12 }}
+            exec:
+              command:
+                - /bin/sh
+                - -c
+                - -e
+                {{- include "autogitsync.readinessProbeCommand" . | nindent 16 }}
+          {{- else if .Values.autogitsync.customReadinessProbe }}
+          readinessProbe: {{- include "common.tplvalues.render" (dict "value" .Values.autogitsync.customReadinessProbe "context" $) | nindent 12 }}
+          {{- end }}
+          {{- end }}
+          {{- if .Values.autogitsync.resources }}
+          resources: {{- toYaml .Values.autogitsync.resources | nindent 12 }}
+          {{- end }}
+          {{- if .Values.autogitsync.lifecycleHooks }}
+          lifecycle: {{- include "common.tplvalues.render" (dict "value" .Values.autogitsync.lifecycleHooks "context" $) | nindent 12 }}
+          {{- end }}
+          volumeMounts:
+            {{- if .Values.shmVolume.enabled }}
+            - name: dshm
+              mountPath: /dev/shm
+            {{- end }}
+            {{- if .Values.autogitsync.persistence.enabled }}
+            - name: data
+              mountPath: {{ .Values.autogitsync.persistence.mountPath }}
+              {{- if .Values.autogitsync.persistence.subPath }}
+              subPath: {{ .Values.autogitsync.persistence.subPath }}
+              {{- end }}
+            {{- end }}
+            - name: config-autogitsync
+              mountPath: /app/config-autogitsync.yml
+              subPath: config-autogitsync.yml
+            {{- if .Values.autogitsync.extraVolumeMounts }}
+            {{- include "common.tplvalues.render" (dict "value" .Values.autogitsync.extraVolumeMounts "context" $) | nindent 12 }}
+            {{- end }}
+        {{- if .Values.autogitsync.sidecars }}
+        {{- include "common.tplvalues.render" ( dict "value" .Values.autogitsync.sidecars "context" $ ) | nindent 8 }}
+        {{- end }}
+      volumes:
+        - name: autogitsync-config
+          configMap:
+            name: {{ include "autogitsync.autogitsync.configmapName" . }}
+        {{- if .Values.autogitsync.extraVolumes }}
+        {{- include "common.tplvalues.render" ( dict "value" .Values.autogitsync.extraVolumes "context" $ ) | nindent 8 }}
+        {{- end }}
+        {{- if and .Values.metrics.enabled .Values.metrics.customMetrics }}
+        - name: custom-metrics
+          configMap:
+            name: {{ printf "%s-metrics" (include "common.names.fullname" .) }}
+        {{- end }}
+        {{- if .Values.shmVolume.enabled }}
+        - name: dshm
+          emptyDir:
+            medium: Memory
+            {{- if .Values.shmVolume.sizeLimit }}
+            sizeLimit: {{ .Values.shmVolume.sizeLimit }}
+            {{- end }}
+        {{- end }}
+  {{- if and .Values.autogitsync.persistence.enabled .Values.autogitsync.persistence.existingClaim }}
+        - name: data
+          persistentVolumeClaim:
+            claimName: {{ tpl .Values.autogitsync.persistence.existingClaim $ }}
+  {{- else if not .Values.autogitsync.persistence.enabled }}
+        - name: data
+          emptyDir: {}
+  {{- else }}
+        - name: config-autogitsync
+          configMap:
+            name: {{ include "autogitsync.secretName" . }}
+
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+        {{- if .Values.autogitsync.persistence.annotations }}
+        annotations: {{- toYaml .Values.autogitsync.persistence.annotations | nindent 10 }}
+        {{- end }}
+      spec:
+        accessModes:
+        {{- range .Values.autogitsync.persistence.accessModes }}
+          - {{ . | quote }}
+        {{- end }}
+        {{- if .Values.autogitsync.persistence.dataSource }}
+        dataSource: {{- include "common.tplvalues.render" (dict "value" .Values.autogitsync.persistence.dataSource "context" $) | nindent 10 }}
+        {{- end }}
+        resources:
+          requests:
+            storage: {{ .Values.autogitsync.persistence.size | quote }}
+        {{- if .Values.autogitsync.persistence.selector }}
+        selector: {{- include "common.tplvalues.render" (dict "value" .Values.autogitsync.persistence.selector "context" $) | nindent 10 }}
+        {{- end }}
+        {{- include "common.storage.class" (dict "persistence" .Values.autogitsync.persistence "global" .Values.global) | nindent 8 }}
+  {{- end }}

@@ -1,0 +1,441 @@
+## @section Global parameters
+## Please, note that this will override the parameters, including dependencies, configured to use the global value
+##
+global:
+  ## @param global.imageRegistry Global Docker image registry
+  ##
+  imageRegistry: ""
+  ## @param global.imagePullSecrets Global Docker registry secret names as an array
+  ## e.g.
+  ## imagePullSecrets:
+  ##   - myRegistryKeySecretName
+  ##
+  imagePullSecrets: []
+  ## @param global.storageClass Global StorageClass for Persistent Volume(s)
+  ##
+  storageClass: ""
+
+## @section Common parameters
+##
+
+## @param kubeVersion Override Kubernetes version
+##
+kubeVersion: ""
+## @param nameOverride String to partially override common.names.fullname template (will maintain the release name)
+##
+nameOverride: ""
+## @param fullnameOverride String to fully override common.names.fullname template
+##
+fullnameOverride: ""
+## @param clusterDomain Kubernetes Cluster Domain
+##
+clusterDomain: cluster.local
+## @param extraDeploy Array of extra objects to deploy with the release (evaluated as a template)
+##
+extraDeploy: []
+## @param commonLabels Add labels to all the deployed resources
+##
+commonLabels: {}
+## @param commonAnnotations Add annotations to all the deployed resources
+##
+commonAnnotations: {}
+## Enable diagnostic mode in the statefulset
+##
+diagnosticMode:
+  ## @param diagnosticMode.enabled Enable diagnostic mode (all probes will be disabled and the command will be overridden)
+  ##
+  enabled: false
+  ## @param diagnosticMode.command Command to override all containers in the statefulset
+  ##
+  command:
+    - sleep
+  ## @param diagnosticMode.args Args to override all containers in the statefulset
+  ##
+  args:
+    - infinity
+
+## @section common parameters
+##
+
+## image version
+## ref: https://hub.docker.com/r/autogitsynclab/autogitsync/tags/
+## @param image.registry image registry
+## @param image.repository image repository
+## @param image.tag image tag (immutable tags are recommended)
+## @param image.pullPolicy image pull policy
+## @param image.pullSecrets Specify image pull secrets
+## @param image.debug Specify if debug values should be set
+##
+image:
+  registry: ghcr.io
+  repository: srcdslab/autogitsync
+  tag: ""
+  ## Specify a imagePullPolicy
+  ## Defaults to 'Always' if image tag is 'latest', else set to 'IfNotPresent'
+  ## ref: https://kubernetes.io/docs/user-guide/images/#pre-pulling-images
+  ##
+  pullPolicy: "IfNotPresent"
+  ## Optionally specify an array of imagePullSecrets.
+  ## Secrets must be manually created in the namespace.
+  ## ref: https://kubernetes.io/docs/tasks/configure-pod-container/pull-image-private-registry/
+  ## Example:
+  ## pullSecrets:
+  ##   - myRegistryKeySecretName
+  ##
+  pullSecrets: []
+  ## Set to true if you would like to see extra information on logs
+  ##
+  debug: false
+
+## Start pod(s) without limitations on shm memory.
+## By default docker and containerd (and possibly other container runtimes) limit `/dev/shm` to `64M`
+## ref: https://github.com/containerd/containerd/issues/3654
+##
+shmVolume:
+  ## @param shmVolume.enabled Enable emptyDir volume for /dev/shm for autogitsync pod(s)
+  ##
+  enabled: true
+  ## @param shmVolume.sizeLimit Set this to enable a size limit on the shm tmpfs
+  ## Note: the size of the tmpfs counts against container's memory limit
+  ## e.g:
+  ## sizeLimit: 1Gi
+  ##
+  sizeLimit: ""
+
+## @section autogitsync parameters
+##
+autogitsync:
+  ## @param autogitsync.existingSecret Exisiting secret name where sentitive server config is stored
+  ##
+  existingSecret: ""
+  ## @param autogitsync.configuration autogitsync main configuration to be injected as ConfigMap
+  ##
+  configuration: ""
+  ## @param autogitsync.existingConfigmap Name of an existing ConfigMap with autogitsync configuration
+  ## NOTE: `autogitsync.configuration` and `autogitsync.pgHbaConfiguration` will be ignored
+  ##
+  existingConfigmap: ""
+  ## @param autogitsync.extraEnvVars Array with extra environment variables to add to autogitsync nodes
+  ## e.g:
+  ## extraEnvVars:
+  ##   - name: FOO
+  ##     value: "bar"
+  ##
+  extraEnvVars: []
+  ## @param autogitsync.extraEnvVarsCM Name of existing ConfigMap containing extra env vars for autogitsync nodes
+  ##
+  extraEnvVarsCM: ""
+  ## @param autogitsync.extraEnvVarsSecret Name of existing Secret containing extra env vars for autogitsync nodes
+  ##
+  extraEnvVarsSecret: ""
+  ## @param autogitsync.command Override default container command (useful when using custom images)
+  ##
+  command: []
+  ## @param autogitsync.args Override default container args (useful when using custom images)
+  ##
+  args: []
+  ## Configure extra options for autogitsync containers' liveness, readiness and startup probes
+  ## ref: https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/#configure-probes
+  ## @param autogitsync.livenessProbe.enabled Enable livenessProbe on autogitsync containers
+  ## @param autogitsync.livenessProbe.initialDelaySeconds Initial delay seconds for livenessProbe
+  ## @param autogitsync.livenessProbe.periodSeconds Period seconds for livenessProbe
+  ## @param autogitsync.livenessProbe.timeoutSeconds Timeout seconds for livenessProbe
+  ## @param autogitsync.livenessProbe.failureThreshold Failure threshold for livenessProbe
+  ## @param autogitsync.livenessProbe.successThreshold Success threshold for livenessProbe
+  ##
+  livenessProbe:
+    enabled: true
+    initialDelaySeconds: 30
+    periodSeconds: 10
+    timeoutSeconds: 5
+    failureThreshold: 6
+    successThreshold: 1
+  ## @param autogitsync.readinessProbe.enabled Enable readinessProbe on autogitsync containers
+  ## @param autogitsync.readinessProbe.initialDelaySeconds Initial delay seconds for readinessProbe
+  ## @param autogitsync.readinessProbe.periodSeconds Period seconds for readinessProbe
+  ## @param autogitsync.readinessProbe.timeoutSeconds Timeout seconds for readinessProbe
+  ## @param autogitsync.readinessProbe.failureThreshold Failure threshold for readinessProbe
+  ## @param autogitsync.readinessProbe.successThreshold Success threshold for readinessProbe
+  ##
+  readinessProbe:
+    enabled: true
+    initialDelaySeconds: 5
+    periodSeconds: 10
+    timeoutSeconds: 5
+    failureThreshold: 6
+    successThreshold: 1
+  ## @param autogitsync.startupProbe.enabled Enable startupProbe on autogitsync containers
+  ## @param autogitsync.startupProbe.initialDelaySeconds Initial delay seconds for startupProbe
+  ## @param autogitsync.startupProbe.periodSeconds Period seconds for startupProbe
+  ## @param autogitsync.startupProbe.timeoutSeconds Timeout seconds for startupProbe
+  ## @param autogitsync.startupProbe.failureThreshold Failure threshold for startupProbe
+  ## @param autogitsync.startupProbe.successThreshold Success threshold for startupProbe
+  ##
+  startupProbe:
+    enabled: false
+    initialDelaySeconds: 30
+    periodSeconds: 10
+    timeoutSeconds: 1
+    failureThreshold: 15
+    successThreshold: 1
+  ## @param autogitsync.customLivenessProbe Custom livenessProbe that overrides the default one
+  ##
+  customLivenessProbe: {}
+  ## @param autogitsync.customReadinessProbe Custom readinessProbe that overrides the default one
+  ##
+  customReadinessProbe: {}
+  ## @param autogitsync.customStartupProbe Custom startupProbe that overrides the default one
+  ##
+  customStartupProbe: {}
+  ## @param autogitsync.lifecycleHooks for the autogitsync container to automate configuration before or after startup
+  ##
+  lifecycleHooks: {}
+  ## autogitsync resource requests and limits
+  ## ref: https://kubernetes.io/docs/user-guide/compute-resources/
+  ## @param autogitsync.resources.limits The resources limits for the autogitsync containers
+  ## @param autogitsync.resources.requests.memory The requested memory for the autogitsync containers
+  ## @param autogitsync.resources.requests.cpu The requested cpu for the autogitsync containers
+  ##
+  resources:
+    limits: {}
+    requests:
+      memory: 32Mi
+      cpu: 10m
+  ## Pod Security Context
+  ## ref: https://kubernetes.io/docs/tasks/configure-pod-container/security-context/
+  ## @param autogitsync.podSecurityContext.enabled Enable security context
+  ## @param autogitsync.podSecurityContext.fsGroup Group ID for the pod
+  ##
+  podSecurityContext:
+    enabled: true
+    fsGroup: 1001
+  ## Container Security Context
+  ## ref: https://kubernetes.io/docs/tasks/configure-pod-container/security-context/
+  ## @param autogitsync.containerSecurityContext.enabled Enable container security context
+  ## @param autogitsync.containerSecurityContext.runAsUser User ID for the container
+  ##
+  containerSecurityContext:
+    enabled: true
+    runAsUser: 1001
+  ## @param autogitsync.hostAliases autogitsync pods host aliases
+  ## https://kubernetes.io/docs/concepts/services-networking/add-entries-to-pod-etc-hosts-with-host-aliases/
+  ##
+  hostAliases: []
+  ## @param autogitsync.hostNetwork Specify if host network should be enabled for pod (autogitsync)
+  ##
+  hostNetwork: false
+  ## @param autogitsync.hostIPC Specify if host IPC should be enabled for pod (autogitsync)
+  ##
+  hostIPC: false
+  ## @param autogitsync.labels Map of labels to add to the statefulset (autogitsync)
+  ##
+  labels: {}
+  ## @param autogitsync.annotations Annotations for autogitsync pods
+  ##
+  annotations: {}
+  ## @param autogitsync.podLabels Map of labels to add to the pods (autogitsync)
+  ##
+  podLabels: {}
+  ## @param autogitsync.podAnnotations Map of annotations to add to the pods (autogitsync)
+  ##
+  podAnnotations: {}
+  ## @param autogitsync.podAffinityPreset autogitsync pod affinity preset. Ignored if `autogitsync.affinity` is set. Allowed values: `soft` or `hard`
+  ## ref: https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#inter-pod-affinity-and-anti-affinity
+  ##
+  podAffinityPreset: ""
+  ## @param autogitsync.podAntiAffinityPreset autogitsync pod anti-affinity preset. Ignored if `autogitsync.affinity` is set. Allowed values: `soft` or `hard`
+  ## ref: https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#inter-pod-affinity-and-anti-affinity
+  ##
+  podAntiAffinityPreset: soft
+  ## autogitsync node affinity preset
+  ## ref: https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#node-affinity
+  ##
+  nodeAffinityPreset:
+    ## @param autogitsync.nodeAffinityPreset.type autogitsync node affinity preset type. Ignored if `autogitsync.affinity` is set. Allowed values: `soft` or `hard`
+    ##
+    type: ""
+    ## @param autogitsync.nodeAffinityPreset.key autogitsync node label key to match Ignored if `autogitsync.affinity` is set.
+    ## E.g.
+    ## key: "kubernetes.io/e2e-az-name"
+    ##
+    key: ""
+    ## @param autogitsync.nodeAffinityPreset.values autogitsync node label values to match. Ignored if `autogitsync.affinity` is set.
+    ## E.g.
+    ## values:
+    ##   - e2e-az1
+    ##   - e2e-az2
+    ##
+    values: []
+  ## @param autogitsync.affinity Affinity for autogitsync pods assignment
+  ## ref: https://kubernetes.io/docs/concepts/configuration/assign-pod-node/#affinity-and-anti-affinity
+  ## Note: autogitsync.podAffinityPreset, autogitsync.podAntiAffinityPreset, and autogitsync.nodeAffinityPreset will be ignored when it's set
+  ##
+  affinity: {}
+  ## @param autogitsync.nodeSelector Node labels for autogitsync pods assignment
+  ## ref: https://kubernetes.io/docs/user-guide/node-selection/
+  ##
+  nodeSelector: {}
+  ## @param autogitsync.tolerations Tolerations for autogitsync pods assignment
+  ## ref: https://kubernetes.io/docs/concepts/configuration/taint-and-toleration/
+  ##
+  tolerations: []
+  ## @param autogitsync.topologySpreadConstraints Topology Spread Constraints for pod assignment spread across your cluster among failure-domains. Evaluated as a template
+  ## Ref: https://kubernetes.io/docs/concepts/workloads/pods/pod-topology-spread-constraints/#spread-constraints-for-pods
+  ##
+  topologySpreadConstraints: []
+  ## @param autogitsync.priorityClassName Priority Class to use for each pod (autogitsync)
+  ##
+  priorityClassName: ""
+  ## @param autogitsync.schedulerName Use an alternate scheduler, e.g. "stork".
+  ## ref: https://kubernetes.io/docs/tasks/administer-cluster/configure-multiple-schedulers/
+  ##
+  schedulerName: ""
+  ## @param autogitsync.terminationGracePeriodSeconds Seconds autogitsync pod needs to terminate gracefully
+  ## ref: https://kubernetes.io/docs/concepts/workloads/pods/pod/#termination-of-pods
+  ##
+  terminationGracePeriodSeconds: ""
+  ## @param autogitsync.updateStrategy.type autogitsync statefulset strategy type
+  ## @param autogitsync.updateStrategy.rollingUpdate autogitsync statefulset rolling update configuration parameters
+  ## ref: https://kubernetes.io/docs/concepts/workloads/controllers/statefulset/#update-strategies
+  ##
+  updateStrategy:
+    type: RollingUpdate
+    rollingUpdate: {}
+  ## @param autogitsync.extraVolumeMounts Optionally specify extra list of additional volumeMounts for the autogitsync container(s)
+  ##
+  extraVolumeMounts: []
+  ## @param autogitsync.extraVolumes Optionally specify extra list of additional volumes for the autogitsync pod(s)
+  ##
+  extraVolumes: []
+  ## @param autogitsync.sidecars Add additional sidecar containers to the autogitsync pod(s)
+  ## For example:
+  ## sidecars:
+  ##   - name: your-image-name
+  ##     image: your-image
+  ##     imagePullPolicy: Always
+  ##     ports:
+  ##       - name: portname
+  ##         containerPort: 1234
+  ##
+  sidecars: []
+  ## @param autogitsync.initContainers Add additional init containers to the autogitsync pod(s)
+  ## Example
+  ##
+  ## initContainers:
+  ##   - name: do-something
+  ##     image: busybox
+  ##     command: ['do', 'something']
+  ##
+  initContainers: []
+  ## @param autogitsync.extraPodSpec Optionally specify extra PodSpec for the autogitsync pod(s)
+  ##
+  extraPodSpec: {}
+  ## autogitsync persistence configuration
+  ##
+  persistence:
+    ## @param autogitsync.persistence.enabled Enable autogitsync data persistence using PVC
+    ##
+    enabled: true
+    ## @param autogitsync.persistence.existingClaim Name of an existing PVC to use
+    ##
+    existingClaim: ""
+    ## @param autogitsync.persistence.mountPath The path the volume will be mounted at
+    ## Note: useful when using custom images
+    ##
+    mountPath: /app
+    ## @param autogitsync.persistence.subPath The subdirectory of the volume to mount to
+    ## Useful in dev environments and one PV for multiple services
+    ##
+    subPath: ""
+    ## @param autogitsync.persistence.storageClass PVC Storage Class for autogitsync data volume
+    ## If defined, storageClassName: <storageClass>
+    ## If set to "-", storageClassName: "", which disables dynamic provisioning
+    ## If undefined (the default) or set to null, no storageClassName spec is
+    ##   set, choosing the default provisioner.  (gp2 on AWS, standard on
+    ##   GKE, AWS & OpenStack)
+    ##
+    storageClass: ""
+    ## @param autogitsync.persistence.accessModes PVC Access Mode for volume
+    ##
+    accessModes:
+      - ReadWriteOnce
+    ## @param autogitsync.persistence.size PVC Storage Request for volume
+    ##
+    size: 4Gi
+    ## @param autogitsync.persistence.annotations Annotations for the PVC
+    ##
+    annotations: {}
+    ## @param autogitsync.persistence.selector Selector to match an existing Persistent Volume (this value is evaluated as a template)
+    ## selector:
+    ##   matchLabels:
+    ##     app: my-app
+    ##
+    selector: {}
+    ## @param autogitsync.persistence.dataSource Custom PVC data source
+    ##
+    dataSource: {}
+
+## @section Volume Permissions parameters
+
+## Init containers parameters:
+## volumePermissions: Change the owner and group of the persistent volume(s) mountpoint(s) to 'runAsUser:fsGroup' on each node
+##
+volumePermissions:
+  ## @param volumePermissions.enabled Enable init container that changes the owner and group of the persistent volume
+  ##
+  enabled: true
+  ## @param volumePermissions.image.registry Init container volume-permissions image registry
+  ## @param volumePermissions.image.repository Init container volume-permissions image repository
+  ## @param volumePermissions.image.tag Init container volume-permissions image tag (immutable tags are recommended)
+  ## @param volumePermissions.image.pullPolicy Init container volume-permissions image pull policy
+  ## @param volumePermissions.image.pullSecrets Init container volume-permissions image pull secrets
+  ##
+  image:
+    registry: docker.io
+    repository: bitnami/bitnami-shell
+    tag: 11-debian-11-r22
+    pullPolicy: IfNotPresent
+    ## Optionally specify an array of imagePullSecrets.
+    ## Secrets must be manually created in the namespace.
+    ## ref: https://kubernetes.io/docs/tasks/configure-pod-container/pull-image-private-registry/
+    ## Example:
+    ## pullSecrets:
+    ##   - myRegistryKeySecretName
+    ##
+    pullSecrets: []
+  ## Init container resource requests and limits
+  ## ref: https://kubernetes.io/docs/user-guide/compute-resources/
+  ## @param volumePermissions.resources.limits Init container volume-permissions resource limits
+  ## @param volumePermissions.resources.requests Init container volume-permissions resource requests
+  ##
+  resources:
+    limits: {}
+    requests: {}
+  ## Init container' Security Context
+  ## Note: the chown of the data folder is done to containerSecurityContext.runAsUser
+  ## and not the below volumePermissions.containerSecurityContext.runAsUser
+  ## @param volumePermissions.containerSecurityContext.runAsUser User ID for the init container
+  ##
+  containerSecurityContext:
+    runAsUser: 0
+
+## @section Other Parameters
+
+## Service account for to use.
+## ref: https://kubernetes.io/docs/tasks/configure-pod-container/configure-service-account/
+##
+serviceAccount:
+  ## @param serviceAccount.create Enable creation of ServiceAccount for pod
+  ##
+  create: false
+  ## @param serviceAccount.name The name of the ServiceAccount to use.
+  ## If not set and create is true, a name is generated using the common.names.fullname template
+  ##
+  name: ""
+  ## @param serviceAccount.automountServiceAccountToken Allows auto mount of ServiceAccountToken on the serviceAccount created
+  ## Can be set to false if pods using this serviceAccount do not need to use K8s API
+  ##
+  automountServiceAccountToken: true
+  ## @param serviceAccount.annotations Additional custom annotations for the ServiceAccount
+  ##
+  annotations: {}
