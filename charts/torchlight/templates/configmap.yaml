@@ -1,0 +1,36 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "torchlight.fullname" . }}-config
+  namespace: {{ .Release.Namespace | quote }}
+  labels:
+    {{- include "torchlight.labels" . | nindent 4 }}
+data:
+  config.json: |
+    {{- .Values.configMaps.config | toJson | nindent 4 }}
+
+---
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "torchlight.fullname" . }}-access
+  namespace: {{ .Release.Namespace | quote }}
+  labels:
+    {{- include "torchlight.labels" . | nindent 4 }}
+data:
+  access.json: |
+    {{- .Values.configMaps.access | toJson | nindent 4 }}
+
+---
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "torchlight.fullname" . }}-triggers
+  namespace: {{ .Release.Namespace | quote }}
+  labels:
+    {{- include "torchlight.labels" . | nindent 4 }}
+data:
+  triggers.json: |
+    {{- .Values.configMaps.triggers | toJson | nindent 4 }}
