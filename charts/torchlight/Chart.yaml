@@ -1,0 +1,17 @@
+apiVersion: v2
+name: torchlight
+version: 0.0.1
+appVersion: "v1.0.0"
+description: A Helm chart for torchlight
+keywords:
+  - torchlight
+  - srcds
+  - game
+  - music
+sources:
+  - https://github.com/srcdslab/helm-charts/tree/main/charts/torchlight
+engine: gotpl
+icon: https://i.imgur.com/NkgdoIn.jpg
+maintainers:
+- name: maxime1907
+  email: 19607336+maxime1907@users.noreply.github.com
