@@ -1,6 +1,6 @@
 apiVersion: v2
 name: srcds
-version: 0.0.2
+version: 0.0.3
 appVersion: "v0.0.4"
 dependencies:
   - name: common
