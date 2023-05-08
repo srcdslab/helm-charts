@@ -55,4 +55,25 @@ entries:
     urls:
     - https://github.com/srcdslab/helm-charts/releases/download/srcds-0.0.2/srcds-0.0.2.tgz
     version: 0.0.2
-generated: "2023-05-08T13:49:23.722833458Z"
+  torchlight:
+  - apiVersion: v2
+    appVersion: v1.0.0
+    created: "2023-05-08T14:36:49.951608454Z"
+    description: A Helm chart for torchlight
+    digest: 5a3bdba9348d6b59165d11b23c6eeb7c2fba25cda2e401f2b3ce4f7c81e9b10b
+    icon: https://i.imgur.com/NkgdoIn.jpg
+    keywords:
+    - torchlight
+    - srcds
+    - game
+    - music
+    maintainers:
+    - email: 19607336+maxime1907@users.noreply.github.com
+      name: maxime1907
+    name: torchlight
+    sources:
+    - https://github.com/srcdslab/helm-charts/tree/main/charts/torchlight
+    urls:
+    - https://github.com/srcdslab/helm-charts/releases/download/torchlight-0.0.1/torchlight-0.0.1.tgz
+    version: 0.0.1
+generated: "2023-05-08T14:36:49.951615654Z"
