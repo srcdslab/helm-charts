@@ -1,0 +1,177 @@
+# Default values for torchlight.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+replicaCount: 1
+
+image:
+  # repository: registry.gitlab.com/counterstrikesource/torchlight
+  repository: ghcr.io/srcdslab/torchlight
+  pullPolicy: Always
+  # Overrides the image tag whose default is the chart appVersion.
+  tag: "master"
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+args: []
+
+serviceAccount:
+  # Specifies whether a service account should be created
+  create: false
+  # Annotations to add to the service account
+  annotations: {}
+  # The name of the service account to use.
+  # If not set and create is true, a name is generated using the fullname template
+  name: ""
+
+terminationGracePeriodSeconds: 10
+
+podAnnotations: {}
+
+podSecurityContext: {}
+  # fsGroup: 2000
+
+securityContext:
+  # capabilities:
+  #   drop:
+  #   - ALL
+  # readOnlyRootFilesystem: true
+  # runAsNonRoot: true
+  # runAsUser: 1001
+
+service:
+  type: ClusterIP
+  port: 27115
+
+ports:
+  - name: http
+    containerPort: 27115
+    protocol: TCP
+
+livenessProbe: {}
+  # httpGet:
+  #   path: /
+  #   port: http
+readinessProbe: {}
+  # httpGet:
+  #   path: /
+  #   port: http
+
+resources:
+  # We usually recommend not to specify default resources and to leave this as a conscious
+  # choice for the user. This also increases chances charts run on environments with little
+  # resources, such as Minikube. If you do want to specify resources, uncomment the following
+  # lines, adjust them as necessary, and remove the curly braces after 'resources:'.
+  # limits:
+  #   cpu: 100m
+  #   memory: 128Mi
+  requests:
+    cpu: 20m
+    memory: 32Mi
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}
+
+configMaps:
+  config:
+    VoiceServer:
+      Host: "srcds-prod-css-ze"
+      Port: 27020,
+      SampleRate: 22050
+
+    SMAPIServer:
+      Host: "srcds-prod-css-ze"
+      Port: 27021
+
+    AudioLimits:
+      '0':
+        Uses: -1
+        TotalTime: 12.5
+        MaxLength: 5.0
+        DelayFactor: 10.0
+      '2':
+        Uses: -1
+        TotalTime: 17.5
+        MaxLength: 5.0
+        DelayFactor: 5.0
+
+    AntiSpam:
+      ImmunityLevel: 5
+      MaxUsageSpan: 60
+      MaxUsageTime: 10
+      PunishDelay: 60
+      StopLevel: 3
+      ChatCooldown: 15
+      StopOnMapChange: true
+
+    Advertiser:
+      MaxSpan: 30
+      AdStop: 10
+
+    AccessLevel:
+      Root: 6
+      Admin: 3
+      DonatedAdmin: 2
+      VIP: 2
+      Player: 0
+
+    CommandLevel:
+      Exec: 100
+      Dec: 100
+      AccessAdmin: 6
+      Enable: 3
+      Disable: 3
+      Reload: 3
+      Stop: 3
+      Say: 2
+      Youtube: 2
+      YoutubeSearch: 2
+      Random: 2
+      Trigger: 2
+      TriggerReserved: 2
+      Who: 2
+      Calculate: 2
+      Access: 0
+      Search: 0
+      Define: 0
+      Weather: 0
+      VoteDisable: 0
+
+    TorchRCON:
+      Host: 0.0.0.0
+      Port: 27115
+      Password: supersecretpassword
+
+    GeoIP:
+      Path: "/usr/share/GeoIP"
+      CityFilename: GeoLite2-City.mmdb
+
+    Logging:
+      level: INFO
+      output: default
+      format: "%(asctime)s | %(levelname)s | %(message)s"
+      datefmt: "%Y-%m-%dT%H:%M:%S%z"
+
+    WolframAPIKey: ''
+    WundergroundAPIKey: ''
+    OpenWeatherAPIKey: ''
+
+  access:
+    '[U:1:17038726]':
+      name: Boss
+      level: 100
+
+  triggers:
+    - names:
+      - "!tuturu"
+      sound: Tutturuu_v1.wav
+    - names:
+      - "!tuturulist"
+      sound:
+      - Tutturuu_v1.wav
+      - Tutturuu_v1.wav
