@@ -81,7 +81,7 @@ configMaps:
   config:
     VoiceServer:
       Host: "srcds-prod-css-ze"
-      Port: 27020,
+      Port: 27020
       SampleRate: 22050
 
     SMAPIServer:
