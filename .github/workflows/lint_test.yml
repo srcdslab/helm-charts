@@ -17,7 +17,7 @@ jobs:
 
       - uses: actions/setup-python@v7
         with:
-          python-version: 3.7
+          python-version: '3.x'
 
       - name: Set up chart-testing
         uses: helm/chart-testing-action@v2.9.0
@@ -27,14 +27,14 @@ jobs:
         run: |
           changed=$(ct --config ct.yaml list-changed)
           if [[ -n "$changed" ]]; then
-            echo "::set-output name=changed::true"
+            echo "changed=true" >> "$GITHUB_OUTPUT"
           fi
 
       - name: Run chart-testing (lint)
         run: ct lint --config ct.yaml
 
       - name: Create kind cluster
-        uses: helm/kind-action@v1.14.0
+        uses: helm/kind-action@v1.15.1
         if: steps.list-changed.outputs.changed == 'true'
 
       # - name: Deploy Prometheus Operator crds
